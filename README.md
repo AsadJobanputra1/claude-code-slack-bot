@@ -1,6 +1,6 @@
 # Claude Code Slack Bot
 
-A Slack bot that integrates with Claude Code SDK to provide AI-powered coding assistance directly in your Slack workspace.
+A Slack bot that integrates with Claude Agent SDK (formerly Claude Code SDK) to provide AI-powered coding assistance directly in your Slack workspace.
 
 ## Features
 
@@ -250,7 +250,7 @@ DEBUG=true
 
 This will show detailed logs including:
 - Incoming Slack messages
-- Claude SDK request/response details
+- Claude Agent SDK request/response details
 - Session management operations
 - Message streaming updates
 
@@ -260,7 +260,7 @@ src/
 ├── index.ts          # Application entry point
 ├── config.ts         # Configuration management
 ├── types.ts                      # TypeScript type definitions
-├── claude-handler.ts             # Claude Code SDK integration
+├── claude-handler.ts             # Claude Agent SDK integration
 ├── slack-handler.ts              # Slack event handling
 ├── working-directory-manager.ts  # Working directory management
 └── logger.ts                     # Logging utility

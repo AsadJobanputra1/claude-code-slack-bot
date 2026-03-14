@@ -1,6 +1,6 @@
 import { App } from '@slack/bolt';
 import { ClaudeHandler } from './claude-handler';
-import { SDKMessage } from '@anthropic-ai/claude-code';
+import { SDKMessage } from '@anthropic-ai/claude-agent-sdk';
 import { Logger } from './logger';
 import { WorkingDirectoryManager } from './working-directory-manager';
 import { FileHandler, ProcessedFile } from './file-handler';
@@ -220,7 +220,7 @@ export class SlackHandler {
         ? await this.fileHandler.formatFilePrompt(processedFiles, text || '')
         : text || '';
 
-      this.logger.info('Sending query to Claude Code SDK', { 
+      this.logger.info('Sending query to Claude Agent SDK', { 
         prompt: finalPrompt.substring(0, 200) + (finalPrompt.length > 200 ? '...' : ''), 
         sessionId: session.sessionId,
         workingDirectory,

@@ -1,15 +1,19 @@
-import { query, type SDKMessage } from '@anthropic-ai/claude-code';
+import { query, type SDKMessage, type Options } from '@anthropic-ai/claude-agent-sdk';
+import * as fs from 'fs';
+import * as path from 'path';
 import { ConversationSession } from './types';
 import { Logger } from './logger';
-import { McpManager, McpServerConfig } from './mcp-manager';
+import { McpManager } from './mcp-manager';
 
 export class ClaudeHandler {
   private sessions: Map<string, ConversationSession> = new Map();
   private logger = new Logger('ClaudeHandler');
   private mcpManager: McpManager;
+  private permissionServerPath: string;
 
   constructor(mcpManager: McpManager) {
     this.mcpManager = mcpManager;
+    this.permissionServerPath = this.resolvePermissionServerPath();
   }
 
   getSessionKey(userId: string, channelId: string, threadTs?: string): string {
@@ -32,6 +36,20 @@ export class ClaudeHandler {
     return session;
   }
 
+  private resolvePermissionServerPath(): string {
+    const candidates = [
+      path.resolve(__dirname, 'permission-mcp-server.ts'),
+      path.resolve(__dirname, 'permission-mcp-server.js'),
+    ];
+
+    const resolvedPath = candidates.find((candidate) => fs.existsSync(candidate));
+    if (!resolvedPath) {
+      throw new Error(`Permission MCP server not found. Checked: ${candidates.join(', ')}`);
+    }
+
+    return resolvedPath;
+  }
+
   async *streamQuery(
     prompt: string,
     session?: ConversationSession,
@@ -39,10 +57,16 @@ export class ClaudeHandler {
     workingDirectory?: string,
     slackContext?: { channel: string; threadTs?: string; user: string }
   ): AsyncGenerator<SDKMessage, void, unknown> {
-    const options: any = {
-      outputFormat: 'stream-json',
+    const options: Options = {
+      abortController: abortController || new AbortController(),
       permissionMode: slackContext ? 'default' : 'bypassPermissions',
+      settingSources: ['user', 'project', 'local'],
     };
+
+    // Agent SDK requires explicit opt-in when bypassing permissions.
+    if (!slackContext) {
+      options.allowDangerouslySkipPermissions = true;
+    }
 
     // Add permission prompt tool if we have Slack context
     if (slackContext) {
@@ -59,14 +83,18 @@ export class ClaudeHandler {
     
     // Add permission prompt server if we have Slack context
     if (slackContext) {
+      const permissionEnv: Record<string, string> = {
+        SLACK_CONTEXT: JSON.stringify(slackContext),
+      };
+      if (process.env.SLACK_BOT_TOKEN) {
+        permissionEnv.SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN;
+      }
+
       const permissionServer = {
         'permission-prompt': {
           command: 'npx',
-          args: ['tsx', '/Users/marcelpociot/Experiments/claude-code-slack/src/permission-mcp-server.ts'],
-          env: {
-            SLACK_BOT_TOKEN: process.env.SLACK_BOT_TOKEN,
-            SLACK_CONTEXT: JSON.stringify(slackContext)
-          }
+          args: ['tsx', this.permissionServerPath],
+          env: permissionEnv,
         }
       };
       
@@ -109,7 +137,6 @@ export class ClaudeHandler {
     try {
       for await (const message of query({
         prompt,
-        abortController: abortController || new AbortController(),
         options,
       })) {
         if (message.type === 'system' && message.subtype === 'init') {

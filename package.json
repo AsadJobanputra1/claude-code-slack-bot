@@ -7,7 +7,9 @@
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "prod": "node dist/index.js"
+    "prod": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [],
   "author": "",
@@ -15,10 +17,11 @@
   "devDependencies": {
     "@types/node": "^24.0.4",
     "tsx": "^4.20.3",
-    "typescript": "^5.8.3"
+    "typescript": "^5.8.3",
+    "vitest": "4.0.18"
   },
   "dependencies": {
-    "@anthropic-ai/claude-code": "^1.0.35",
+    "@anthropic-ai/claude-agent-sdk": "0.2.74",
     "@modelcontextprotocol/sdk": "^1.13.2",
     "@slack/bolt": "^4.4.0",
     "@types/node-fetch": "^2.6.12",

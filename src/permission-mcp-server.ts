@@ -90,7 +90,12 @@ class PermissionMCPServer {
 
     this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
       if (request.params.name === "permission_prompt") {
-        return await this.handlePermissionPrompt(request.params.arguments as PermissionRequest);
+        const args = request.params.arguments;
+        if (!args || typeof args !== 'object' || !('tool_name' in args) || !('input' in args)) {
+          throw new Error('Invalid permission_prompt arguments');
+        }
+
+        return await this.handlePermissionPrompt(args as unknown as PermissionRequest);
       }
       throw new Error(`Unknown tool: ${request.params.name}`);
     });
@@ -261,7 +266,7 @@ class PermissionMCPServer {
 export const permissionServer = new PermissionMCPServer();
 
 // Run if this file is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+if (require.main === module) {
   permissionServer.run().catch((error) => {
     logger.error('Permission MCP server error:', error);
     process.exit(1);
